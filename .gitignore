@@ -3,3 +3,4 @@ PostHog Personal API Key.txt
 .env
 .env.*
 !.env.example
+.posthog-wizard-cache/
