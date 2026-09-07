@@ -37,7 +37,7 @@ Practice bookings use localStorage only. This does not provide shared availabili
 
 ## GitHub Pages
 
-The folder is connected to `https://github.com/tex-upport/tex-upport.github.io.git`. All links are relative; `index.html` is the root home page. The implementation is pushed to `main`. GitHub rejected Pages setup with HTTP 422 because the current plan does not support Pages for this private repository. Publishing requires the owner's decision to make the repository public or use a supporting GitHub plan. Repository visibility has not been changed. The local token file is excluded from Git and never loaded by the website.
+The folder is connected to `https://github.com/tex-upport/tex-upport.github.io.git`. All links are relative; `index.html` is the root home page. The repository is public, and GitHub Pages publishes the root of `main` at `https://tex-upport.github.io/`. Push changes to `main` to update the preview. The local token file is excluded from Git and never loaded by the website.
 
 ## Verification
 
