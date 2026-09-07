@@ -9,6 +9,8 @@ const files = new Map([
   ]),
   ["/styles.css", ["styles.css", "text/css"]],
   ["/app.js", ["app.js", "text/javascript"]],
+  ["/analytics-config.js", ["analytics-config.js", "text/javascript"]],
+  ["/analytics.js", ["analytics.js", "text/javascript"]],
   ["/assets/tutor-portraits.png", ["assets/tutor-portraits.png", "image/png"]],
 ]);
 http

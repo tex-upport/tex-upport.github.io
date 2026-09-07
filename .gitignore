@@ -1,1 +1,5 @@
 PostHog Project Token.txt
+PostHog Personal API Key.txt
+.env
+.env.*
+!.env.example

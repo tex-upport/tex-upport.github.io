@@ -26,19 +26,21 @@ Sample schedules use the browser’s local time zone. All names, subject assignm
 
 Home introduces ABC Tutoring, K–12 support, math/English/science, and two primary actions. Tutors appear in a scrollable grid. Booking collects parent name/email, student first name/grade, subject, tutor, and an available future one-hour slot. Dana’s page shows parent/student information, tutor, subject, date/time, and field-specific search. No parent accounts or booking-history page.
 
-Practice bookings use localStorage only. This does not provide shared availability or reliable protection against concurrent bookings. No real sessions, payments, emails, backend, authentication, or analytics are implemented.
+Practice bookings use localStorage only. This does not provide shared availability or reliable protection against concurrent bookings. No real sessions, payments, emails, backend, or authentication are implemented. PostHog tracks anonymous public-page activity and practice-booking conversion; see [the analytics guide](analytics/README.md) for event definitions, Facebook links, dashboard setup, and testing.
 
 ## After visual approval
 
 - Replace placeholder tutor details and confirm service time zone, actual availability, and session location/format with Dana.
 - Add server-side booking storage, atomic slot reservations, and authenticated staff access before collecting real family data.
 - Add parent/tutor confirmation notifications, Dana’s booking notification, and parent/tutor reminders one day before sessions; tutor contact details are still needed.
-- Implement analytics only after the page review: page visits, explicit tutor profile opens (not hover), booking conversion/abandonment, and Facebook referral attribution with consistent event definitions.
+- When real booking storage is added, report completion only after the server confirms the reservation and change the analytics booking mode from practice to real.
 
 ## GitHub Pages
 
-The folder is connected to `https://github.com/tex-upport/tex-upport.github.io.git`. All links are relative; `index.html` is the root home page. The repository is public, and GitHub Pages publishes the root of `main` at `https://tex-upport.github.io/`. Push changes to `main` to update the preview. The local token file is excluded from Git and never loaded by the website.
+The folder is connected to `https://github.com/tex-upport/tex-upport.github.io.git`. All links are relative; `index.html` is the root home page. The repository is public, and GitHub Pages publishes the root of `main` at `https://tex-upport.github.io/`. Push changes to `main` to update the preview. Local key text files are excluded from Git. `analytics-config.js` contains only PostHog's public event-ingestion token; personal API keys must never be published.
 
 ## Verification
 
 Browser checks passed in headless Microsoft Edge: all four desktop pages, responsive layouts at 320/390/768 pixels without page overflow, subject/grade filters, tutor profile dialogs, preselected tutors, grade restrictions, missing-time validation, practice booking persistence, occupied-slot exclusion, calendar navigation, all staff search fields, empty results, and practice-data reset/cancel. No JavaScript runtime errors occurred. The preview server also returns 404 for the local token file.
+
+Analytics browser checks use the real PostHog SDK with intercepted ingestion requests. They verify exact pageview counts, profile clicks/keyboard activation versus hover, booking starts and successful saves, validation/storage failures, Facebook attribution and anonymous identity across pages, exclusion of family details and raw URL queries, staff exclusion, test labels, disabled local-preview tracking, privacy signals, and graceful behavior when the analytics CDN is blocked.

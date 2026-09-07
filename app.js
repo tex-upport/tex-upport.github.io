@@ -97,6 +97,17 @@ const tutors = [
   },
 ];
 const page = document.body.dataset.page;
+const track = (event, properties = {}) => {
+  try {
+    window.ABCAnalytics?.track(event, properties);
+  } catch {
+    /* Optional analytics. */
+  }
+};
+const tutorAnalytics = (tutor) => ({
+  tutor_id: tutor.id,
+  tutor_name: tutor.name,
+});
 const storageKey = "abc-tutoring-preview-bookings-v1";
 const localZone =
   Intl.DateTimeFormat().resolvedOptions().timeZone || "local time";
@@ -194,6 +205,10 @@ function setupTutors() {
         b.setAttribute("aria-pressed", b === button);
       });
       render();
+      track("tutor_filters_changed", {
+        subject_filter: subject || "all",
+        grade_filter: grade,
+      });
     }),
   );
   document
@@ -201,6 +216,10 @@ function setupTutors() {
     .addEventListener("change", (event) => {
       grade = event.target.value;
       render();
+      track("tutor_filters_changed", {
+        subject_filter: subject || "all",
+        grade_filter: grade,
+      });
     });
   document.querySelector("#tutor-grid").addEventListener("click", (event) => {
     const button = event.target.closest("[data-profile]");
@@ -212,6 +231,7 @@ function setupTutors() {
       .querySelector(".dialog-close")
       .addEventListener("click", () => dialog.close());
     dialog.showModal();
+    track("tutor_profile_viewed", tutorAnalytics(tutor));
   });
 }
 function bookingPage() {
@@ -237,6 +257,37 @@ function setupBooking() {
   const form = document.querySelector("#booking-form");
   const tutorSelect = document.querySelector("#tutor-select");
   tutorSelect.value = tutor.id;
+  const attemptId = crypto.randomUUID();
+  let bookingStarted = false;
+  const bookingProperties = () => ({
+    ...tutorAnalytics(tutor),
+    booking_attempt_id: attemptId,
+  });
+  function startBooking() {
+    if (bookingStarted) return;
+    bookingStarted = true;
+    track("booking_started", bookingProperties());
+  }
+  form.addEventListener("input", (event) => {
+    if (event.target !== tutorSelect) startBooking();
+  });
+  let nativeValidationReported = false;
+  form.addEventListener(
+    "invalid",
+    () => {
+      startBooking();
+      if (nativeValidationReported) return;
+      nativeValidationReported = true;
+      track("booking_validation_failed", {
+        ...bookingProperties(),
+        reason: "invalid_required_details",
+      });
+      setTimeout(() => {
+        nativeValidationReported = false;
+      }, 0);
+    },
+    true,
+  );
   function updateSummary() {
     document.querySelector("#booking-summary").innerHTML =
       `<h2>Your little step forward</h2><div class="summary-tutor">${avatar(tutor)}<div><h3>${tutor.name}</h3><p>${tutor.subjects.join(" & ")} · Grades ${tutor.grades}</p></div></div><dl><div><dt>Date</dt><dd>${selectedDate ? dateLabel(selectedDate) : "Choose a date"}</dd></div><div><dt>Time</dt><dd>${selectedHour !== null ? timeLabel(selectedHour) : "Choose a time"}</dd></div><div><dt>Duration</dt><dd>1 hour</dd></div><div class="total"><dt>Session rate</dt><dd>$${tutor.rate}</dd></div></dl><p class="field-hint">Sample rate · No payment collected</p><p class="summary-tip"><strong>Learning starts with feeling comfortable.</strong>A whole hour of individual attention, at a pace that works for your child.</p>`;
@@ -313,11 +364,17 @@ function setupBooking() {
   }
   tutorSelect.addEventListener("change", () => {
     tutor = tutorFor(tutorSelect.value);
+    startBooking();
     updateTutor();
+    track("booking_tutor_viewed", {
+      ...tutorAnalytics(tutor),
+      trigger: "tutor_change",
+    });
   });
   document.querySelector("#calendar").addEventListener("click", (event) => {
     const button = event.target.closest("[data-date]");
     if (!button || button.disabled) return;
+    startBooking();
     selectedDate = button.dataset.date;
     selectedHour = null;
     document.querySelector("#booking-error").textContent = "";
@@ -328,6 +385,11 @@ function setupBooking() {
     const button = event.target.closest("[data-hour]");
     if (!button) return;
     selectedHour = Number(button.dataset.hour);
+    startBooking();
+    track("booking_time_selected", {
+      ...bookingProperties(),
+      session_duration_minutes: 60,
+    });
     document.querySelector("#booking-error").textContent = "";
     renderTimes();
     document.querySelector(`[data-hour="${selectedHour}"]`).focus();
@@ -346,15 +408,25 @@ function setupBooking() {
   });
   form.addEventListener("submit", (event) => {
     event.preventDefault();
+    startBooking();
+    track("booking_submitted", bookingProperties());
     const error = document.querySelector("#booking-error");
     if (!selectedDate || selectedHour === null) {
       error.textContent = "Choose an available date and time before booking.";
+      track("booking_validation_failed", {
+        ...bookingProperties(),
+        reason: "missing_slot",
+      });
       document
         .querySelector("#calendar")
         .scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     if (!availableHours(tutor, selectedDate).includes(selectedHour)) {
+      track("booking_validation_failed", {
+        ...bookingProperties(),
+        reason: "slot_unavailable",
+      });
       error.textContent =
         "That time is no longer available. Please choose another time.";
       selectedHour = null;
@@ -365,6 +437,10 @@ function setupBooking() {
     for (const key of ["parent", "student", "email"]) {
       data[key] = data[key].trim();
       if (!data[key]) {
+        track("booking_validation_failed", {
+          ...bookingProperties(),
+          reason: "missing_required_details",
+        });
         error.textContent =
           "Please complete your name, email, and student’s first name.";
         form.elements[key].focus();
@@ -384,14 +460,27 @@ function setupBooking() {
     } catch {
       error.textContent =
         "Your browser couldn’t save this practice booking. Enable local storage and try again.";
+      track("booking_validation_failed", {
+        ...bookingProperties(),
+        reason: "browser_storage_unavailable",
+      });
       return;
     }
+    track("booking_completed", {
+      ...bookingProperties(),
+      subject: data.subject,
+      session_duration_minutes: 60,
+    });
     document.querySelector("#main").innerHTML =
       `<section class="panel success-panel"><div class="success-icon" aria-hidden="true">✓</div><div class="eyebrow" style="justify-content:center">A little step forward</div><h1 tabindex="-1">Your practice booking is saved.</h1><p>You’ve tried the booking flow from start to finish.<br>Here’s what the session would look like.</p><div class="success-details"><strong>${escapeHTML(data.student)} + ${tutor.name}</strong><p>${escapeHTML(data.subject)} · ${data.grade === "0" ? "Kindergarten" : `Grade ${escapeHTML(data.grade)}`}</p><p>${dateLabel(selectedDate)} · ${timeLabel(selectedHour)}–${timeLabel(selectedHour + 1)}</p><p>${escapeHTML(localZone)} · 1 hour · $${tutor.rate}</p><p>Parent: ${escapeHTML(data.parent)} · ${escapeHTML(data.email)}</p></div><div class="prototype-note">This is a preview, not a real reservation. No emails were sent. Your practice booking is available in Dana’s preview on this browser.</div><div class="hero-actions"><a class="button" href="tutors.html">Back to our tutors</a><a class="button secondary" href="booking.html">Try another booking</a></div></section>`;
     document.querySelector("h1").focus();
     window.scrollTo(0, 0);
   });
   updateTutor();
+  track("booking_tutor_viewed", {
+    ...tutorAnalytics(tutor),
+    trigger: "page_load",
+  });
 }
 function sampleBookings() {
   const people = [
