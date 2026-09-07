@@ -37,4 +37,8 @@ Practice bookings use localStorage only. This does not provide shared availabili
 
 ## GitHub Pages
 
-The folder is connected to `https://github.com/tex-upport/tex-upport.github.io.git`. All links are relative; `index.html` is the root home page. The static files can be deployed to GitHub Pages once the preview is ready to publish. The local token file is excluded from Git and never loaded by the website.
+The folder is connected to `https://github.com/tex-upport/tex-upport.github.io.git`. All links are relative; `index.html` is the root home page. The implementation is pushed to `main`. GitHub rejected Pages setup with HTTP 422 because the current plan does not support Pages for this private repository. Publishing requires the owner's decision to make the repository public or use a supporting GitHub plan. Repository visibility has not been changed. The local token file is excluded from Git and never loaded by the website.
+
+## Verification
+
+Browser checks passed in headless Microsoft Edge: all four desktop pages, responsive layouts at 320/390/768 pixels without page overflow, subject/grade filters, tutor profile dialogs, preselected tutors, grade restrictions, missing-time validation, practice booking persistence, occupied-slot exclusion, calendar navigation, all staff search fields, empty results, and practice-data reset/cancel. No JavaScript runtime errors occurred. The preview server also returns 404 for the local token file.
